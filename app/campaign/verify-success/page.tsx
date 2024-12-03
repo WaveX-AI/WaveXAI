@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
+import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -33,8 +34,15 @@ interface CampaignStatus {
 }
 
 export default function VerifySuccessPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifySuccessContent />
+    </Suspense>
+  );
+}
+
+function VerifySuccessContent() {
   const searchParams = useSearchParams();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const router = useRouter();
   const campaignId = searchParams.get('id');
   const token = searchParams.get('token');
@@ -122,6 +130,7 @@ export default function VerifySuccessPage() {
       }));
     }
   };
+
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <Card className="w-full max-w-md ">
