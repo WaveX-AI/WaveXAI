@@ -32,7 +32,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Header } from "./Header";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from 'lucide-react';
 import { startupFormSchema } from "@/lib/validation";
 import { z } from "zod";
 
@@ -80,19 +80,15 @@ export function StartupForm() {
         throw new Error(data.error || 'Failed to submit startup information');
       }
 
-      const startupId = data.startup.id; //gettig startupId
+      const startupId = data.startup.id;
 
       toast({
         title: "Success! 🎉",
-        description: "Your startup has been analyzed and matches have been found. Redirecting to dashboard...",
+        description: "Your startup has been analyzed. Redirecting to results...",
       });
 
-      // Delay redirect slightly to allow toast to be seen
-      setTimeout(() => {
-        router.push(`/dashboard/${startupId}`);
-        router.refresh();
-      }, 2000);
-
+      // Redirect to the startup details page
+      router.push(`/startup/${startupId}`);
     } catch (error) {
       console.error("Error in form submission:", error);
       toast({
@@ -340,3 +336,4 @@ export function StartupForm() {
     </>
   );
 }
+

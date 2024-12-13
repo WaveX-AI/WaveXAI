@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  
   transpilePackages: ['three'],
   reactStrictMode: false,
   

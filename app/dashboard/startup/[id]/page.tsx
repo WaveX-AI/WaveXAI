@@ -34,9 +34,46 @@ import { Progress } from '@/components/ui/progress';
 import DashboardHeader from '@/components/DashboardHeader';
 import EmailComposer from '@/components/emailComposer/EmailComposer';
 import { useToast } from '@/hooks/use-toast';
-import { AnalysisResponse } from '@/types';
 
-export default function StartupDetails() {
+// Interface for Startup Details
+interface StartupDetails {
+  id: string;
+  name: string;
+  description: string;
+  industry: string;
+  sector: string;
+  stage: string;
+  capital: number;
+}
+
+// Interface for Investor
+interface Investor {
+  name: string;
+  fitScore: number;
+  website: string;
+  contactInfo: {
+    email: string;
+    location: string;
+  };
+  investmentCriteria: {
+    minInvestment: number;
+    sectors: string[];
+  };
+  matchReason: string;
+  notablePortfolio: string;
+}
+
+// Interface for Analysis Response
+interface AnalysisResponse {
+  startup: StartupDetails;
+  analysis: {
+    keyStrengths: string[];
+    potentialChallenges: string[];
+    investors: Investor[];
+  };
+}
+
+export default function StartupDetailsPage() {
   const { id } = useParams();
   const [analysisData, setAnalysisData] = useState<AnalysisResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -203,10 +240,14 @@ export default function StartupDetails() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p>{startup.description}</p>
-            <p className="mt-2">
-              Capital Required: ${startup.capital.toLocaleString()}
-            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <strong>Description:</strong> {startup.description}
+              </div>
+              <div>
+                <strong>Capital Required:</strong> ${startup.capital.toLocaleString()}
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -268,15 +309,7 @@ export default function StartupDetails() {
               </Button>
               <EmailComposer 
                 startupId={startup.id} 
-                startupData={{
-                  id: startup.id,
-                  name: startup.name,
-                  industry: startup.industry,
-                  sector: startup.sector,
-                  stage: startup.stage,
-                  description: startup.description,
-                  capital: startup.capital,
-                }} 
+                startupData={startup}
               />
             </div>
             {analysis.investors.length > 0 ? (
@@ -342,4 +375,3 @@ export default function StartupDetails() {
     </>
   );
 }
-
