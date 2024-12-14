@@ -35,7 +35,6 @@ import DashboardHeader from '@/components/DashboardHeader';
 import EmailComposer from '@/components/emailComposer/EmailComposer';
 import { useToast } from '@/hooks/use-toast';
 
-// Interface for Startup Details
 interface StartupDetails {
   id: string;
   name: string;
@@ -46,7 +45,6 @@ interface StartupDetails {
   capital: number;
 }
 
-// Interface for Investor
 interface Investor {
   name: string;
   fitScore: number;
@@ -63,7 +61,6 @@ interface Investor {
   notablePortfolio: string;
 }
 
-// Interface for Analysis Response
 interface AnalysisResponse {
   startup: StartupDetails;
   analysis: {

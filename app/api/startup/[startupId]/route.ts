@@ -1,22 +1,17 @@
-// app/api/startup/[startupId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { AnalysisResponse } from '@/types';
 
 const prisma = new PrismaClient();
 
-// Add proper typing for the request params
 export async function GET(
   request: NextRequest,
   { params }: { params: { startupId: string } }
 ) {
   try {
     
-    // const  startupId  = (await params).startupId;
-
     const  { startupId } = await params;
 
-    // Debugging logs to ensure the parameter is received
     console.log("Received startupId:", startupId);
 
     if (!startupId) {
@@ -52,7 +47,6 @@ export async function GET(
     });
     console.log(`Found ${matches.length} matches for startupId: ${startupId}`);
 
-    // If no matches found, return 404
     if (matches.length === 0) {
       return NextResponse.json(
         { error: 'No matches found' },
