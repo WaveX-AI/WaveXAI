@@ -88,7 +88,7 @@ export function StartupForm() {
       });
 
       // Redirect to the startup details page
-      router.push(`/startup/${startupId}`);
+      router.push(`dashboard/startup/${startupId}`);
     } catch (error) {
       console.error("Error in form submission:", error);
       toast({

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -24,7 +25,7 @@ function DashboardPage() {
     const fetchStartups = async () => {
       setLoading(true);
       try {
-        const response = await fetch('/api/startups');
+        const response = await fetch(`/api/startup/`);
         if (!response.ok) {
           throw new Error('Failed to fetch startups');
         }

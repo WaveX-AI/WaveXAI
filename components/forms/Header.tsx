@@ -23,7 +23,7 @@ export function Header() {
                 <div className="flex items-center space-x-4">
                         
                         <Link href="/">
-                            <Button className="text-white hover:bg-gradient-to-r from-purple-600 to-blue-600 hover:text-white">Back to Home</Button>
+                            <Button className="text-black hover:bg-gradient-to-r from-purple-600 to-blue-600 hover:text-white">Back to Home</Button>
                         </Link>
 
                     {/* <Button variant="outline" className="text-purple-600 hover:bg-gradient-to-r from-purple-600 to-blue-600 hover:text-white">Sign In</Button> */}

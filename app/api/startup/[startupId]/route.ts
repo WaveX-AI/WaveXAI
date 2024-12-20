@@ -9,104 +9,90 @@ export async function GET(
   { params }: { params: { startupId: string } }
 ) {
   try {
-    
-    const  { startupId } = await params;
+    const { startupId } = params;
 
-    console.log("Received startupId:", startupId);
-
-    if (!startupId) {
-      return NextResponse.json(
-        { error: 'startupId is required' },
-        { status: 400 }
-      );
-    }
-
-
-    const matches = await prisma.match.findMany({
-      where: { startupId },
+    const startup = await prisma.startup.findUnique({
+      where: { id: startupId },
       include: {
-        startup: {
+        user: {
           select: {
             id: true,
             name: true,
-            industry: true,
-            sector: true,
-            stage: true,
-            description: true,
-            capital: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
+            email: true,
           },
         },
       },
     });
-    console.log(`Found ${matches.length} matches for startupId: ${startupId}`);
 
-    if (matches.length === 0) {
+    if (!startup) {
       return NextResponse.json(
-        { error: 'No matches found' },
+        { error: 'Startup not found' },
         { status: 404 }
       );
     }
 
+    const matches = await prisma.match.findMany({
+      where: { startupId },
+    });
+
     const analysisResponse: AnalysisResponse = {
-      message: 'Startup data fetched successfully',
       startup: {
-        id: matches[0]?.startup.id,
-        name: matches[0]?.startup.name,
-        industry: matches[0]?.startup.industry,
-        sector: matches[0]?.startup.sector,
-        stage: matches[0]?.startup.stage,
-        description: matches[0]?.startup.description,
-        capital: matches[0]?.startup.capital,
+        id: startup.id,
+        name: startup.name,
+        description: startup.description,
+        industry: startup.industry,
+        sector: startup.sector,
+        stage: startup.stage,
+        capital: startup.capital,
         user: {
-          id: matches[0]?.startup.user.id,
-          name: matches[0]?.startup.user.name || 'Unknown User',
-          email: matches[0]?.startup.user.email,
+          id: startup.user.id,
+          // Handle potential null value for name
+          name: startup.user.name || 'Anonymous User',
+          email: startup.user.email
         },
-        matches: matches.map((match) => ({
+        matches: matches.map(match => ({
           id: match.id,
           vcName: match.vcName,
           contactInfo: match.contactInfo,
           minimumInvestment: match.minimumInvestment,
           sectors: match.sectors,
-          website: match.website,
-          fitScore: match.fitScore,
-          matchReason: match.matchReason,
-          notablePortfolio: match.notablePortfolio,
-        })),
+          website: match.website
+        }))
       },
       analysis: {
+        // Add the missing analysisNotes field
+        analysisNotes: "Analysis of startup investment potential",
+        keyStrengths: [],
+        potentialChallenges: [],
         investors: matches.map((match) => ({
           name: match.vcName,
-          contactInfo: JSON.parse(match.contactInfo),
+          fitScore: match.fitScore,
           website: match.website,
+          contactInfo: {
+            email: JSON.parse(match.contactInfo).email || "",
+            phone: JSON.parse(match.contactInfo).phone || "",
+            location: JSON.parse(match.contactInfo).location || "",
+            linkedIn: JSON.parse(match.contactInfo).linkedIn || ""
+          },
           investmentCriteria: {
             minInvestment: match.minimumInvestment,
             maxInvestment: 0,
             preferredStages: [],
-            sectors: match.sectors.split(', '),
+            sectors: match.sectors.split(', ')
           },
-          fitScore: match.fitScore,
           matchReason: match.matchReason,
-          notablePortfolio: match.notablePortfolio,
+          notablePortfolio: match.notablePortfolio
         })),
-        analysisNotes: '',
-        keyStrengths: [],
-        potentialChallenges: [],
+        // Add the missing recommendations field
         recommendations: {
           pitchImprovements: [],
           nextSteps: []
         }
-      },
+      }
     };
 
     return NextResponse.json(analysisResponse);
+
   } catch (error) {
     console.error('Error fetching startup data:', error);
     return NextResponse.json(

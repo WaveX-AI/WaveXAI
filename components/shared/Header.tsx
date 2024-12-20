@@ -20,7 +20,7 @@ export function Header() {
           <div className="flex items-center space-x-4">
             {isSignedIn ? (
               <>
-                <Link href="/Form" target="_blank">
+                <Link href="/dashboard" target="_blank">
                   <Button className="text-black hover:bg-gradient-to-r from-purple-600 to-blue-600 hover:text-white">
                     Get Started
                   </Button>

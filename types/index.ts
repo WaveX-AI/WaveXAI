@@ -84,7 +84,7 @@ export type User = {
   }
 
   export type AnalysisResponse = {
-    message: string;
+   
     startup: {
       id: string;
       name: string;
