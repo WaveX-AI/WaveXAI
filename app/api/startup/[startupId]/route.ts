@@ -8,6 +8,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { startupId: string } }
 ) {
+  console.log('Fetching startup with ID:', params.startupId);
+
   try {
     const { startupId } = params;
 
@@ -21,36 +23,35 @@ export async function GET(
             email: true,
           },
         },
+        matches: true,
       },
     });
 
+    console.log('Fetched startup data:', JSON.stringify(startup, null, 2));
+
     if (!startup) {
+      console.log('Startup not found');
       return NextResponse.json(
         { error: 'Startup not found' },
         { status: 404 }
       );
     }
 
-    const matches = await prisma.match.findMany({
-      where: { startupId },
-    });
-
     const analysisResponse: AnalysisResponse = {
       startup: {
         id: startup.id,
         name: startup.name,
-        description: startup.description,
-        industry: startup.industry,
-        sector: startup.sector,
-        stage: startup.stage,
-        capital: startup.capital,
+        description: startup.description || '',
+        industry: startup.industry || '',
+        sector: startup.sector || '',
+        stage: startup.stage || '',
+        capital: startup.capital || 0,
         user: {
           id: startup.user.id,
-          // Handle potential null value for name
           name: startup.user.name || 'Anonymous User',
-          email: startup.user.email
+          email: startup.user.email || ''
         },
-        matches: matches.map(match => ({
+        matches: startup.matches.map(match => ({
           id: match.id,
           vcName: match.vcName,
           contactInfo: match.contactInfo,
@@ -60,30 +61,37 @@ export async function GET(
         }))
       },
       analysis: {
-        // Add the missing analysisNotes field
         analysisNotes: "Analysis of startup investment potential",
         keyStrengths: [],
         potentialChallenges: [],
-        investors: matches.map((match) => ({
-          name: match.vcName,
-          fitScore: match.fitScore,
-          website: match.website,
-          contactInfo: {
-            email: JSON.parse(match.contactInfo).email || "",
-            phone: JSON.parse(match.contactInfo).phone || "",
-            location: JSON.parse(match.contactInfo).location || "",
-            linkedIn: JSON.parse(match.contactInfo).linkedIn || ""
-          },
-          investmentCriteria: {
-            minInvestment: match.minimumInvestment,
-            maxInvestment: 0,
-            preferredStages: [],
-            sectors: match.sectors.split(', ')
-          },
-          matchReason: match.matchReason,
-          notablePortfolio: match.notablePortfolio
-        })),
-        // Add the missing recommendations field
+        investors: startup.matches.map((match) => {
+          let contactInfo;
+          try {
+            contactInfo = JSON.parse(match.contactInfo);
+          } catch (error) {
+            console.error('Error parsing contactInfo:', error);
+            contactInfo = {};
+          }
+          return {
+            name: match.vcName,
+            fitScore: match.fitScore || 0,
+            website: match.website || '',
+            contactInfo: {
+              email: contactInfo.email || '',
+              phone: contactInfo.phone || '',
+              location: contactInfo.location || '',
+              linkedIn: contactInfo.linkedIn || ''
+            },
+            investmentCriteria: {
+              minInvestment: match.minimumInvestment || 0,
+              maxInvestment: 0,
+              preferredStages: [],
+              sectors: match.sectors ? match.sectors.split(', ') : []
+            },
+            matchReason: match.matchReason || '',
+            notablePortfolio: match.notablePortfolio || ''
+          };
+        }),
         recommendations: {
           pitchImprovements: [],
           nextSteps: []
@@ -91,7 +99,27 @@ export async function GET(
       }
     };
 
-    return NextResponse.json(analysisResponse);
+    console.log('Prepared analysis response:', JSON.stringify(analysisResponse, null, 2));
+
+    const jsonResponse = NextResponse.json(analysisResponse);
+    
+    // Log the actual response being sent
+    console.log('Response headers:', jsonResponse.headers);
+    console.log('Response status:', jsonResponse.status);
+    
+    const responseText = await jsonResponse.text();
+    console.log('Response body:', responseText);
+
+    // Validate JSON before sending
+    try {
+      JSON.parse(responseText);
+      console.log('Response is valid JSON');
+    } catch (error) {
+      console.error('Invalid JSON in response:', error);
+      return NextResponse.json({ error: 'Server error: Invalid JSON response' }, { status: 500 });
+    }
+
+    return jsonResponse;
 
   } catch (error) {
     console.error('Error fetching startup data:', error);
@@ -103,3 +131,4 @@ export async function GET(
     await prisma.$disconnect();
   }
 }
+

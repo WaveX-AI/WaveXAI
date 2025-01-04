@@ -1,79 +1,81 @@
-// /* eslint-disable @typescript-eslint/no-explicit-any */
-// import OpenAI from 'openai';
-// import { ValidationArea } from './questions';
+import OpenAI from 'openai';
+import { ValidationArea } from './questions';
 
-// const openai = new OpenAI({
-//   apiKey: process.env.OPENAI_API_KEY,
-// });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+export async function generateStartupAnalysis(
+  startup: { name: string; industry: string; sector: string; stage: string; description: string },
+  answers: Record<string, number>,
+  areaScores: Record<ValidationArea, number>,
+  similarStartups: { name: string; description: string }[]
+) {
+  const prompt = `
+    Analyze this startup and provide detailed feedback:
+    
+    Startup Information:
+    Name: ${startup.name}
+    Industry: ${startup.industry}
+    Sector: ${startup.sector}
+    Stage: ${startup.stage}
+    Description: ${startup.description}
+    
+    Assessment Scores:
+    ${Object.entries(areaScores)
+      .map(([area, score]) => `${area}: ${score}/100`)
+      .join('\n')}
+    
+    Similar Startups in the Industry:
+    ${similarStartups.map(s => `${s.name} - ${s.description}`).join('\n')}
+    
+    Please provide the following analysis in a structured JSON format:
+    {
+      "analysis": "Detailed analysis of the startup's current position",
+      "strengths": ["Key strength 1", "Key strength 2", ...],
+      "challenges": ["Potential challenge 1", "Potential challenge 2", ...],
+      "recommendations": {
+        "marketStrategy": ["Strategy 1", "Strategy 2", ...],
+        "productDevelopment": ["Development tip 1", "Development tip 2", ...],
+        "nextSteps": ["Step 1", "Step 2", ...]
+      },
+      "similarStartupsAnalysis": {
+        "relevantSimilarities": ["Similarity 1", "Similarity 2", ...],
+        "keyLearningPoints": ["Learning point 1", "Learning point 2", ...],
+        "strategicInsights": ["Insight 1", "Insight 2", ...]
+      }
+    }
+    
+    Ensure all responses are provided within this JSON structure.
+  `;
 
-// export async function generateStartupAnalysis(
-//   startup: any,
-//   answers: Record<string, number>,
-//   areaScores: Record<ValidationArea, number>,
-//   similarStartups: any[]
-// ) {
-//   const prompt = `
-//     Analyze this startup and provide detailed feedback:
-    
-//     Startup Information:
-//     Name: ${startup.name}
-//     Industry: ${startup.industry}
-//     Sector: ${startup.sector}
-//     Stage: ${startup.stage}
-//     Description: ${startup.description}
-    
-//     Assessment Scores:
-//     ${Object.entries(areaScores)
-//       .map(([area, score]) => `${area}: ${score}/100`)
-//       .join('\n')}
-    
-//     Similar Startups in the Industry:
-//     ${similarStartups.map(s => `${s.name} - ${s.description}`).join('\n')}
-    
-//     Please provide:
-//     1. Detailed analysis of the startup's current position
-//     2. Key strengths identified from the assessment
-//     3. Potential challenges and risks
-//     4. Specific recommendations for:
-//        - Market strategy
-//        - Product development
-//        - Next steps
-//     5. Analysis of similar startups:
-//        - Relevant similarities
-//        - Key learning points
-//        - Strategic insights
-    
-//     Format the response as a structured JSON object.
-//   `;
+  const response = await openai.chat.completions.create({
+    model: "gpt-4-turbo-preview",
+    messages: [
+      {
+        role: "system",
+        content: "You are an expert startup analyst providing detailed, actionable feedback in a structured JSON format."
+      },
+      {
+        role: "user",
+        content: prompt
+      }
+    ],
+    temperature: 0.7,
+    max_tokens: 2000,
+    response_format: { type: "json_object" }
+  });
 
-//   const response = await openai.chat.completions.create({
-//     model: "gpt-4-turbo-preview",
-//     messages: [
-//       {
-//         role: "system",
-//         content: "You are an expert startup analyst providing detailed, actionable feedback."
-//       },
-//       {
-//         role: "user",
-//         content: prompt
-//       }
-//     ],
-//     temperature: 0.7,
-//     max_tokens: 2000
-//   });
-
-//   // Parse and structure the response
-//   const analysisResult = JSON.parse(response.choices[0].message.content || '{}');
+  const analysisResult = JSON.parse(response.choices[0].message.content || '{}');
   
-//   return {
-//     analysisNotes: analysisResult.analysis,
-//     keyStrengths: analysisResult.strengths,
-//     potentialChallenges: analysisResult.challenges,
-//     recommendations: {
-//       marketStrategy: analysisResult.recommendations.marketStrategy,
-//       productDevelopment: analysisResult.recommendations.productDevelopment,
-//       nextSteps: analysisResult.recommendations.nextSteps
-//     },
-//     similarStartups: analysisResult.similarStartupsAnalysis
-//   };
-// }
+  return {
+    analysisNotes: analysisResult.analysis,
+    keyStrengths: analysisResult.strengths,
+    potentialChallenges: analysisResult.challenges,
+    recommendations: {
+      marketStrategy: analysisResult.recommendations.marketStrategy,
+      productDevelopment: analysisResult.recommendations.productDevelopment,
+      nextSteps: analysisResult.recommendations.nextSteps
+    },
+    similarStartups: analysisResult.similarStartupsAnalysis
+  };
+}

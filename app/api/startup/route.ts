@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import OpenAI from "openai";
 import { createInvestorMatchPrompt } from "@/lib/investorMatch";
@@ -9,14 +8,31 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-type ApiError = {
-  message: string;
-  code?: string;
-  stack?: string;
-};
+// Remove the unused ApiError type
+// type ApiError = {
+//   message: string;
+//   code?: string;
+//   stack?: string;
+// };
 
+// Define an interface for the investor object
+interface Investor {
+  name?: string;
+  contactInfo?: {
+    email?: string;
+    phone?: string;
+  };
+  investmentCriteria?: {
+    minInvestment?: number;
+    sectors?: string[];
+  };
+  website?: string;
+  fitScore?: number;
+  matchReason?: string;
+  notablePortfolio?: string[];
+}
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   console.log("1. Starting POST request handler");
   
   try {
@@ -106,35 +122,47 @@ export async function POST(request: Request) {
       response_format: { type: "json_object" },
     });
 
-    const analysis = JSON.parse(completion.choices[0].message.content || "{}");
-    console.log("11. Received OpenAI analysis:", analysis);
+    const content = completion.choices[0].message.content;
+    if (!content) {
+      throw new Error("OpenAI API returned empty content");
+    }
+    
+    console.log("Raw OpenAI response:", content);
+    
+    let analysis;
+    try {
+      analysis = JSON.parse(content);
+    } catch (parseError) {
+      console.error("Error parsing OpenAI response:", parseError);
+      return NextResponse.json({ error: "Error parsing OpenAI response" }, { status: 500 });
+    }
+    console.log("11. Parsed OpenAI analysis:", analysis);
+
+    if (!analysis.investors || !Array.isArray(analysis.investors)) {
+      console.error("Invalid or missing investors array in OpenAI response");
+      return NextResponse.json({ error: "Invalid OpenAI response format" }, { status: 500 });
+    }
 
     // Store investor matches in database
     console.log("12. Storing investor matches in database");
-    const matchPromises = analysis.investors.map((investor: any) => {
+    const matchPromises = analysis.investors.map((investor: Investor) => {
       return prisma.match.create({
         data: {
           startupId: startup.id,
           vcName: investor.name || "Unknown",
-          contactInfo: JSON.stringify(investor.contactInfo),
-          minimumInvestment: investor.investmentCriteria?.minInvestment|| 0,
+          contactInfo: JSON.stringify(investor.contactInfo || {}),
+          minimumInvestment: investor.investmentCriteria?.minInvestment || 0,
           sectors: (investor.investmentCriteria?.sectors || []).join(", "),
           website: investor.website || "N/A",
-          fitScore: investor.fitScore|| 0,
+          fitScore: investor.fitScore || 0,
           matchReason: investor.matchReason || "N/A",
-          notablePortfolio: investor.notablePortfolio.join(", "),
-          // analysisNotes: analysis.analysisNotes,
-          // keyStrengths: analysis.keyStrengths,
-          // potentialChallenges: analysis.potentialChallenges,
-          // pitchImprovements: analysis.recommendations.pitchImprovements,
-          // nextSteps: analysis.recommendations.nextSteps,
+          notablePortfolio: Array.isArray(investor.notablePortfolio) ? investor.notablePortfolio.join(", ") : "N/A",
         },
       });
     });
 
     const matches = await Promise.all(matchPromises);
     console.log("13. Successfully stored matches:", matches);
-
 
     // Get complete startup data with matches
     const completeStartup = await prisma.startup.findUnique({
@@ -154,21 +182,11 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    // Type-safe error handling
-    const apiError: ApiError = {
-      message: "An unexpected error occurred",
-    };
-
-    if (error instanceof Error) {
-      apiError.message = error.message;
-      apiError.stack = error.stack;
-      if ('code' in error) {
-        apiError.code = (error as { code?: string }).code;
-      }
-    }
-
-    console.error("Error details:", apiError);
-    return NextResponse.json({ error: apiError.message }, { status: 500 });
+    console.error("Error in API route:", error);
+    return NextResponse.json({ 
+      error: "Internal Server Error", 
+      details: error instanceof Error ? error.message : String(error) 
+    }, { status: 500 });
   } finally {
     await prisma.$disconnect();
     console.log("15. Database connection closed");

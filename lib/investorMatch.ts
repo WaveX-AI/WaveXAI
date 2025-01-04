@@ -19,22 +19,20 @@ Task Instructions:
    - Potential strategic value add from the investor
    - Geographic considerations if mentioned
    - Current market trends in the sector
-   
 
-2. Generate a list of Atleast 25 most relevant potential investors/VCs that:
+2. Generate a list of at least 25 most relevant potential investors/VCs that:
    - Have a proven track record in the specified industry/sector
    - Typically invest in the mentioned stage
    - Have investment tickets sizes that match the capital requirements
    - Could provide strategic value beyond just capital
 
-
 3. For each recommended investor, provide:
    - Detailed contact information
-   - Investment criteria get more relevant Investors!
+   - Investment criteria
    - Notable portfolio companies (if relevant)
    - Why they would be a good fit for this startup
 
-Go through the below given list of websites to for finding relevant Investors that match the startup Data Submitted.
+Use the following list of websites for finding relevant Investors that match the startup Data Submitted:
   a. https://confluence.vc/all-investors/
   b. https://docs.google.com/spreadsheets/d/1UA8qsnRXtysw-zxZ8Dg1ogkTqljIWQjZ1mrUlosBBuo/edit?usp=sharing
   c. https://airtable.com/appYlRDIZLwvRPsRh/shrkohpeE2AO2ldeq/tbl5Q8N7NuW22z5Bt
@@ -47,34 +45,34 @@ Return the data in the following JSON structure:
 
 {
   "analysis": {
-    "analysisNotes": string, // Brief analysis of why these investors were selected
-    "keyStrengths": string[], // List of startup's key attractive points for investors
-    "potentialChallenges": string[] // Areas that might need addressing
+    "analysisNotes": "Brief analysis of why these investors were selected",
+    "keyStrengths": ["Startup's key attractive point 1", "Startup's key attractive point 2", ...],
+    "potentialChallenges": ["Challenge 1", "Challenge 2", ...]
   },
   "investors": [
     {
-      "name": string, // Full name of the VC firm/investor
+      "name": "Full name of the VC firm/investor",
       "contactInfo": {
-        "email": string,
-        "phone": string,
-        "location": string,
-        "linkedIn": string
+        "email": "investor@example.com",
+        "phone": "+1234567890",
+        "location": "City, Country",
+        "linkedIn": "https://www.linkedin.com/company/investor"
       },
       "investmentCriteria": {
-        "minInvestment": number, // in USD
-        "maxInvestment": number, // in USD
-        "preferredStages": string[],
-        "sectors": string[]
+        "minInvestment": 100000,
+        "maxInvestment": 1000000,
+        "preferredStages": ["Seed", "Series A"],
+        "sectors": ["SaaS", "Fintech"]
       },
-      "website": string,
-      "matchReason": string, // Why this investor is a good fit
-      "notablePortfolio": string[], // 2-3 relevant portfolio companies
-      "fitScore": number // 0-100 indicating match quality
+      "website": "https://www.investor.com",
+      "matchReason": "Detailed explanation of why this investor is a good fit",
+      "notablePortfolio": ["Company A", "Company B", "Company C"],
+      "fitScore": 85
     }
   ],
   "recommendations": {
-    "pitchImprovements": string[], // Suggestions to improve investor pitch
-    "nextSteps": string[] // Recommended actions for approaching these investors
+    "pitchImprovements": ["Improvement suggestion 1", "Improvement suggestion 2", ...],
+    "nextSteps": ["Recommended action 1", "Recommended action 2", ...]
   }
 }
 
@@ -89,12 +87,7 @@ Important Guidelines:
 - Ensure the matchReason is specific and tailored to each investor
 - Provide actionable and specific next steps in the recommendations
 
-Example Validation Checks:
-1. If the startup is seeking $500K, don't suggest investors who only do $5M+ deals
-2. If it's a seed-stage startup, don't suggest late-stage/growth investors
-3. If it's a specialized industry, prioritize sector-specific investors
-4. Consider geographical focus if mentioned in the startup description
+Maintain professionalism and accuracy in all responses. The goal is to provide actionable intelligence that helps the startup connect with the most relevant potential investors.
 
-Please provide comprehensive and accurate information. If there are any potential red flags or areas of concern in the startup's profile that might affect investor interest, include these in the potentialChallenges section.
-
-Maintain professionalism and accuracy in all responses. The goal is to provide actionable intelligence that helps the startup connect with the most relevant potential investors.`
+Return your response as a valid JSON object.
+`;

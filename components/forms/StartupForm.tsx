@@ -36,7 +36,6 @@ import { Loader2 } from 'lucide-react';
 import { startupFormSchema } from "@/lib/validation";
 import { z } from "zod";
 
-// Define the form values type based on the zod schema
 type StartupFormValues = z.infer<typeof startupFormSchema>;
 
 export function StartupForm() {
@@ -44,7 +43,6 @@ export function StartupForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize form with validation schema
   const form = useForm<StartupFormValues>({
     resolver: zodResolver(startupFormSchema),
     defaultValues: {
@@ -73,11 +71,26 @@ export function StartupForm() {
       });
 
       console.log("2. API Response Status:", response.status);
-      const data = await response.json();
-      console.log("3. API Response Data:", data);
+      
+      const responseText = await response.text();
+      console.log("3. Raw API Response:", responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("4. JSON Parse Error:", parseError);
+        throw new Error(`Invalid JSON response from server: ${responseText}`);
+      }
+
+      console.log("5. Parsed API Response Data:", data);
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit startup information');
+        throw new Error(data.error || data.details || 'Failed to submit startup information');
+      }
+
+      if (!data.startup || !data.startup.id) {
+        throw new Error('Invalid response format: missing startup data');
       }
 
       const startupId = data.startup.id;
@@ -88,7 +101,7 @@ export function StartupForm() {
       });
 
       // Redirect to the startup details page
-      router.push(`dashboard/startup/${startupId}`);
+      router.push(`/dashboard/startup/${startupId}`);
     } catch (error) {
       console.error("Error in form submission:", error);
       toast({
