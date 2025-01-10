@@ -99,27 +99,8 @@ export async function GET(
       }
     };
 
-    console.log('Prepared analysis response:', JSON.stringify(analysisResponse, null, 2));
-
-    const jsonResponse = NextResponse.json(analysisResponse);
-    
-    // Log the actual response being sent
-    console.log('Response headers:', jsonResponse.headers);
-    console.log('Response status:', jsonResponse.status);
-    
-    const responseText = await jsonResponse.text();
-    console.log('Response body:', responseText);
-
-    // Validate JSON before sending
-    try {
-      JSON.parse(responseText);
-      console.log('Response is valid JSON');
-    } catch (error) {
-      console.error('Invalid JSON in response:', error);
-      return NextResponse.json({ error: 'Server error: Invalid JSON response' }, { status: 500 });
-    }
-
-    return jsonResponse;
+    // Return the response directly without attempting to validate it
+    return NextResponse.json(analysisResponse);
 
   } catch (error) {
     console.error('Error fetching startup data:', error);
@@ -131,4 +112,3 @@ export async function GET(
     await prisma.$disconnect();
   }
 }
-

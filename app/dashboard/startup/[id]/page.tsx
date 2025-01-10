@@ -87,7 +87,7 @@ export default function StartupDetailsPage() {
         if (!id) {
           throw new Error('Startup ID is required');
         }
-        const response = await fetch(`api/startup/${id}`);
+        const response = await fetch(`/api/startup/${id}`);
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to fetch startup data');

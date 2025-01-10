@@ -29,7 +29,7 @@ interface Investor {
   website?: string;
   fitScore?: number;
   matchReason?: string;
-  notablePortfolio?: string[];
+  notablePortfolio?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -96,14 +96,6 @@ export async function POST(request: NextRequest) {
 
     // Generate OpenAI analysis
     console.log("9. Generating OpenAI prompt with startup data");
-    const prompt = createInvestorMatchPrompt({
-      startupName: body.startupName,
-      industry: body.industry,
-      sector: body.sector,
-      stage: body.stage,
-      description: body.description,
-      capitalRequired: body.capitalRequired,
-    });
 
     console.log("10. Calling OpenAI API");
     const completion = await openai.chat.completions.create({
@@ -111,14 +103,30 @@ export async function POST(request: NextRequest) {
       messages: [
         { 
           role: "system", 
-          content: "You are an expert AI investment analyst. Provide detailed investor matches in the exact JSON format requested." 
+          content: `You are an expert AI investment analyst. Your primary task is to identify and match investors with startups based on:
+            1. Industry/sector alignment
+            2. Investment stage compatibility
+            3. Investment size requirements
+            4. Geographic considerations
+            5. Strategic value add potential
+    
+            Always return at least 10 real, active investors that match the criteria.
+            Each investor must include complete contact details and investment criteria.` 
         },
         { 
           role: "user", 
-          content: prompt 
+          content: createInvestorMatchPrompt({
+            startupName: body.startupName,
+            industry: body.industry,
+            sector: body.sector,
+            stage: body.stage,
+            description: body.description,
+            capitalRequired: body.capitalRequired,
+          })
         }
       ],
-      temperature: 0.7,
+      temperature: 0.9, // Increased for more creative matching
+      max_tokens: 4000, // Increased to allow for more detailed responses
       response_format: { type: "json_object" },
     });
 
@@ -156,7 +164,7 @@ export async function POST(request: NextRequest) {
           website: investor.website || "N/A",
           fitScore: investor.fitScore || 0,
           matchReason: investor.matchReason || "N/A",
-          notablePortfolio: Array.isArray(investor.notablePortfolio) ? investor.notablePortfolio.join(", ") : "N/A",
+          notablePortfolio: investor.notablePortfolio || "N/A", // Simplified since it's now a string
         },
       });
     });
