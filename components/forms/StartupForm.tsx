@@ -96,7 +96,7 @@ export function StartupForm() {
       const startupId = data.startup.id;
 
       toast({
-        title: "Success! 🎉",
+        title: "Success!🎉",
         description: "Your startup has been analyzed. Redirecting to results...",
       });
 
