@@ -8,12 +8,6 @@
     "start": "next start",
     "lint": "next lint"
   },
-  "packageManager": "npm@10.5.2",
-  "overrides": {
-    "react": "$react",
-    "react-dom": "$react-dom",
-    "next": "$next"
-  },
   "dependencies": {
     "@clerk/nextjs": "^6.9.5",
     "@hookform/resolvers": "^3.9.1",
@@ -72,6 +66,7 @@
     "react-dom": "19.0.0-rc-02c0e824-20241028",
     "react-hook-form": "^7.53.1",
     "recharts": "^2.13.3",
+    "resend": "^4.0.1",
     "sonner": "^1.6.1",
     "swr": "^2.2.5",
     "tailwind-merge": "^2.5.4",

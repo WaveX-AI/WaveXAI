@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
@@ -25,12 +23,11 @@ function normalizeUrl(url: string): string {
     }
     const urlObj = new URL(url);
     return urlObj.origin + urlObj.pathname.replace(/\/$/, '');
-  } catch (e) {
+  } catch {
     return url;
   }
 }
 
-// Optimized to fetch important URLs faster
 async function getImportantUrls(baseUrl: string): Promise<string[]> {
   const urls = new Set<string>();
   const normalizedBaseUrl = normalizeUrl(baseUrl);
@@ -51,7 +48,6 @@ async function getImportantUrls(baseUrl: string): Promise<string[]> {
   urls.add(normalizedBaseUrl);
   importantPaths.forEach(path => urls.add(`${normalizedBaseUrl}${path}`));
 
-  // Try to get sitemap only if we haven't found enough URLs
   try {
     const response = await axios.get(`${normalizedBaseUrl}/sitemap.xml`, {
       timeout: 2000,
@@ -69,36 +65,29 @@ async function getImportantUrls(baseUrl: string): Promise<string[]> {
         }
       });
     }
-  } catch (error) {
-    // Silently fail - we already have our important URLs
+  } catch {
+    console.log(`Sitemap not found for ${baseUrl}`);
   }
 
   return Array.from(urls);
 }
 
-// Optimized crawlPage with faster processing
 async function crawlPage(url: string): Promise<string[]> {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-
+    console.log(`Crawling URL: ${url}`);
     const response = await axios.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       },
-      timeout: 3000,
-      signal: controller.signal,
-      validateStatus: (status) => status === 200,
+      timeout: 5000,
     });
-
-    clearTimeout(timeout);
 
     const $ = cheerio.load(response.data);
     
-    // Remove unnecessary elements and get text content
-    $('script, style, noscript, iframe, img, svg, .footer, footer').remove();
+    // Remove unnecessary elements
+    $('script, style, noscript, iframe, img, svg').remove();
     
-    // First check mailto links as they're more likely to be valid
+    // First check mailto links
     const mailtoEmails = $('a[href^="mailto:"]')
       .map((_, element) => {
         const href = $(element).attr('href');
@@ -107,13 +96,21 @@ async function crawlPage(url: string): Promise<string[]> {
       .get()
       .filter(Boolean);
 
-    // Only scan text content if we haven't found enough emails
-    const textEmails = mailtoEmails.length < 3 ? extractEmails($('body').text()) : [];
+    // Get emails from text content
+    const textEmails = extractEmails($('body').text());
     
-    return [...new Set([...mailtoEmails, ...textEmails])]
+    const foundEmails = [...new Set([...mailtoEmails, ...textEmails])]
       .filter(isValidEmail)
       .map(email => email.toLowerCase());
+
+    console.log(`Found ${foundEmails.length} emails on ${url}`);
+    return foundEmails;
   } catch (error) {
+    if (error instanceof Error) {
+      console.log(`Error crawling ${url}:`, error.message);
+    } else {
+      console.log(`Error crawling ${url}:`, error);
+    }
     return [];
   }
 }
@@ -145,33 +142,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const allEmails = new Set<string>();
-    const errors: string[] = [];
-    let processedMatches = 0;
-    const totalMatches = matches.length;
+    let totalEmailsFound = 0;
+    const processedEmails = new Map<string, Set<string>>();
 
-    // Process all matches in parallel with optimized concurrency
-    const batchSize = 5; // Process 5 matches at a time
-    for (let i = 0; i < matches.length; i += batchSize) {
-      const batchMatches = matches.slice(i, i + batchSize);
-      
-      await Promise.all(batchMatches.map(async (match) => {
-        try {
-          if (!match.website) return;
+    // Process matches sequentially to avoid overwhelming the target servers
+    for (const match of matches) {
+      try {
+        if (!match.website) continue;
+        
+        console.log(`Processing match website: ${match.website}`);
+        const websiteUrl = normalizeUrl(match.website);
+        const urls = await getImportantUrls(websiteUrl);
+        
+        const matchEmails = new Set<string>();
+        
+        // Process URLs in parallel with a smaller batch size
+        const urlBatchSize = 2;
+        for (let i = 0; i < urls.length; i += urlBatchSize) {
+          const urlBatch = urls.slice(i, i + urlBatchSize);
+          const batchEmails = await Promise.all(urlBatch.map(url => crawlPage(url)));
           
-          const websiteUrl = normalizeUrl(match.website);
-          const urls = await getImportantUrls(websiteUrl);
-          
-          // Process URLs in parallel with a concurrency limit
-          const urlBatchSize = 3; // Process 3 URLs at a time
-          for (let j = 0; j < urls.length; j += urlBatchSize) {
-            const urlBatch = urls.slice(j, j + urlBatchSize);
-            const batchEmails = await Promise.all(urlBatch.map(url => crawlPage(url)));
-            batchEmails.flat().forEach(email => allEmails.add(email));
-          }
-
-          // Filter and store valid emails
-          const matchEmails = Array.from(allEmails).filter(email => {
+          batchEmails.flat().forEach(email => {
+            // Filter out common non-personal emails
             const excludePatterns = [
               'noreply',
               'no-reply',
@@ -184,47 +176,55 @@ export async function POST(req: NextRequest) {
               'hello@',
               'contact@'
             ];
-            return !excludePatterns.some(pattern => email.toLowerCase().includes(pattern));
+            
+            if (!excludePatterns.some(pattern => email.toLowerCase().includes(pattern))) {
+              matchEmails.add(email);
+            }
           });
+        }
 
-          if (matchEmails.length > 0) {
-            await prisma.$transaction(
-              matchEmails.map(email =>
-                prisma.investorEmail.upsert({
-                  where: {
-                    matchId_email: {
+        // Store emails for this match
+        processedEmails.set(match.id, matchEmails);
+        totalEmailsFound += matchEmails.size;
+
+        // Save to database
+        if (matchEmails.size > 0) {
+          await prisma.$transaction(
+            Array.from(matchEmails).map(email =>
+              prisma.investorEmail.upsert({
+                where: {
+                  matchId_email: {
                     matchId: match.id,
                     email: email
-                    }
-                  },
-                  update: {},
-                  create: {
-                    matchId: match.id,
-                    email: email,
-                    status: 'valid'
                   }
-                })
-              )
-            );
-          }
-
-          processedMatches++;
-
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          errors.push(`Error processing match ${match.id}: ${errorMessage}`);
+                },
+                update: {},
+                create: {
+                  matchId: match.id,
+                  email: email,
+                  status: 'valid'
+                }
+              })
+            )
+          );
         }
-      }));
+
+      } catch (error) {
+        console.error(`Error processing match ${match.id}:`, error);
+      }
     }
 
-    const uniqueEmails = Array.from(allEmails);
+    // Prepare response with all found emails
+    const allEmails = new Set<string>();
+    processedEmails.forEach(emails => {
+      emails.forEach(email => allEmails.add(email));
+    });
 
     return NextResponse.json({
       success: true,
       message: "Email collection completed",
-      count: uniqueEmails.length,
-      emails: uniqueEmails,
-      errors: errors.length > 0 ? errors : undefined,
+      count: totalEmailsFound,
+      emails: Array.from(allEmails),
       progress: 100
     });
 

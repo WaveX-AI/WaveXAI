@@ -119,55 +119,56 @@ export default function EmailComposer({ startupId, startupData }: EmailComposerP
     setStep(2);
   };
 
-  const onContentSubmit = async (values: EmailContentValues) => {
-    setLoading(true);
-    setEmailStatus('sending');
-    try {
-      const response = await fetch('/api/sendcampaign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          startupId,
-          senderEmail: emailForm.getValues('senderEmail'),
-          content: values.content,
-          subject: `Investment Opportunity: ${startupData.name}`,
-        }),
-      });
-      
-      if (!response.ok) throw new Error('Failed to initiate email campaign');
-      
-      const data = await response.json();
-      if (data.success && data.redirectUrl) {
-        window.open(data.redirectUrl, '_blank');
-      }else {
-        // Handle error
-        console.error(data.error);
-      }
-      
+  // Update the onContentSubmit function in EmailComposer.tsx
+const onContentSubmit = async (values: EmailContentValues) => {
+  setLoading(true);
+  setEmailStatus('sending');
+  try {
+    const response = await fetch('/api/sendcampaign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        startupId,
+        senderEmail: emailForm.getValues('senderEmail'),
+        content: values.content,
+        subject: `Investment Opportunity: ${startupData.name}`,
+      }),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to initiate email campaign');
+    }
+
+    console.log("Campaign creation response:", data); // Debug log
+
+    if (data.success) {
       setEmailStatus('verificationSent');
+      if (data.redirectUrl) {
+        // Optional: Open in new tab
+        window.open(data.redirectUrl, '_blank');
+      }
       toast({
         title: 'Verification Email Sent',
-        description: 'Please check your email to verify and send the campaign.',
+        description: 'Please check your email to verify and send the campaign. You can also use the verification link in your browser.',
       });
-      
-      // Close the dialog after a short delay
-      setTimeout(() => {
-        setOpen(false);
-        setEmailStatus('idle');
-        setStep(1);
-      }, 3000);
-      
-    } catch (error) {
-      setEmailStatus('error');
-      toast({
-        title: 'Error',
-        description: 'Failed to send email campaign',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
+    } else {
+      throw new Error(data.error || 'Unknown error occurred');
     }
-  };
+    
+  } catch (error) {
+    console.error("Campaign error:", error);
+    setEmailStatus('error');
+    toast({
+      title: 'Error',
+      description: error instanceof Error ? error.message : 'Failed to send email campaign',
+      variant: 'destructive',
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const getStatusMessage = () => {
     switch (emailStatus) {
