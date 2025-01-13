@@ -2,20 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import OpenAI from "openai";
 import { createInvestorMatchPrompt } from "@/lib/investorMatch";
+// import { ChatCompletion } from "openai/resources";
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Remove the unused ApiError type
-// type ApiError = {
-//   message: string;
-//   code?: string;
-//   stack?: string;
-// };
-
-// Define an interface for the investor object
 interface Investor {
   name?: string;
   contactInfo?: {
@@ -57,120 +50,108 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // User creation/update
-    console.log("4. Creating/updating user:", { email: body.email, name: body.name });
-    const user = await prisma.user.upsert({
-      where: { email: body.email },
-      update: { name: body.name },
-      create: {
-        email: body.email,
-        name: body.name,
-      },
-    });
-    console.log("5. User operation completed:", user);
-
-    // Capital conversion
-    const capital = parseFloat(body.capitalRequired.replace(/[^0-9.]/g, ''));
-    if (isNaN(capital)) {
-      console.log("Invalid capital amount provided:", body.capitalRequired);
-      return NextResponse.json({ error: "Invalid capital amount" }, { status: 400 });
-    }
-    console.log("6. Parsed capital amount:", capital);
-
-    // Startup creation
-    const startupData = {
-      name: body.startupName,
-      industry: body.industry,
-      sector: body.sector,
-      stage: body.stage,
-      description: body.description,
-      capital,
-      userId: user.id,
-    };
-    console.log("7. Creating startup with data:", startupData);
-
-    const startup = await prisma.startup.create({
-      data: startupData,
-    });
-    console.log("8. Startup created successfully:", startup);
-
-    // Generate OpenAI analysis
-    console.log("9. Generating OpenAI prompt with startup data");
-
-    console.log("10. Calling OpenAI API");
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4-0125-preview",
-      messages: [
-        { 
-          role: "system", 
-          content: `You are an expert AI investment analyst. Your primary task is to identify and match investors with startups based on:
-            1. Industry/sector alignment
-            2. Investment stage compatibility
-            3. Investment size requirements
-            4. Geographic considerations
-            5. Strategic value add potential
-    
-            Always return at least 10 real, active investors that match the criteria.
-            Each investor must include complete contact details and investment criteria.` 
+    // Combine user and startup creation in a single transaction
+    const { startup } = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.upsert({
+        where: { email: body.email },
+        update: { name: body.name },
+        create: {
+          email: body.email,
+          name: body.name,
         },
-        { 
-          role: "user", 
-          content: createInvestorMatchPrompt({
-            startupName: body.startupName,
-            industry: body.industry,
-            sector: body.sector,
-            stage: body.stage,
-            description: body.description,
-            capitalRequired: body.capitalRequired,
-          })
-        }
-      ],
-      temperature: 0.9, // Increased for more creative matching
-      max_tokens: 4000, // Increased to allow for more detailed responses
-      response_format: { type: "json_object" },
+      });
+
+      const capital = parseFloat(body.capitalRequired.replace(/[^0-9.]/g, ''));
+      if (isNaN(capital)) {
+        throw new Error("Invalid capital amount");
+      }
+
+      const startup = await tx.startup.create({
+        data: {
+          name: body.startupName,
+          industry: body.industry,
+          sector: body.sector,
+          stage: body.stage,
+          description: body.description,
+          capital,
+          userId: user.id,
+        },
+      });
+
+      return { startup };
     });
+
+    // Add timeout to OpenAI call
+    const completion = await Promise.race([
+      openai.chat.completions.create({
+        model: "gpt-4-0125-preview",
+        messages: [
+          { 
+            role: "system", 
+            content: `You are an expert AI investment analyst. Your primary task is to identify and match investors with startups based on:
+              1. Industry/sector alignment
+              2. Investment stage compatibility
+              3. Investment size requirements
+              4. Geographic considerations
+              5. Strategic value add potential
+      
+              Always return at least 10 real, active investors that match the criteria.
+              Each investor must include complete contact details and investment criteria.` 
+          },
+          { 
+            role: "user", 
+            content: createInvestorMatchPrompt({
+              startupName: body.startupName,
+              industry: body.industry,
+              sector: body.sector,
+              stage: body.stage,
+              description: body.description,
+              capitalRequired: body.capitalRequired,
+            })
+          }
+        ],
+        temperature: 0.9,
+        max_tokens: 4000,
+        response_format: { type: "json_object" },
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("OpenAI request timeout")), 60000)
+      )
+    ]) as { choices: { message: { content: string } }[] };
 
     const content = completion.choices[0].message.content;
     if (!content) {
       throw new Error("OpenAI API returned empty content");
     }
     
-    console.log("Raw OpenAI response:", content);
-    
-    let analysis;
-    try {
-      analysis = JSON.parse(content);
-    } catch (parseError) {
-      console.error("Error parsing OpenAI response:", parseError);
-      return NextResponse.json({ error: "Error parsing OpenAI response" }, { status: 500 });
-    }
-    console.log("11. Parsed OpenAI analysis:", analysis);
+    const analysis = JSON.parse(content);
 
     if (!analysis.investors || !Array.isArray(analysis.investors)) {
-      console.error("Invalid or missing investors array in OpenAI response");
-      return NextResponse.json({ error: "Invalid OpenAI response format" }, { status: 500 });
+      throw new Error("Invalid or missing investors array in OpenAI response");
     }
 
-    // Store investor matches in database
-    console.log("12. Storing investor matches in database");
-    const matchPromises = analysis.investors.map((investor: Investor) => {
-      return prisma.match.create({
-        data: {
-          startupId: startup.id,
-          vcName: investor.name || "Unknown",
-          contactInfo: JSON.stringify(investor.contactInfo || {}),
-          minimumInvestment: investor.investmentCriteria?.minInvestment || 0,
-          sectors: (investor.investmentCriteria?.sectors || []).join(", "),
-          website: investor.website || "N/A",
-          fitScore: investor.fitScore || 0,
-          matchReason: investor.matchReason || "N/A",
-          notablePortfolio: investor.notablePortfolio || "N/A", // Simplified since it's now a string
-        },
-      });
-    });
-
-    const matches = await Promise.all(matchPromises);
-    console.log("13. Successfully stored matches:", matches);
+    // Store matches in batches
+    const investors = analysis.investors;
+    for (let i = 0; i < investors.length; i += 5) {
+      const batch = investors.slice(i, i + 5);
+      await prisma.$transaction(
+        batch.map((investor: Investor) => 
+          prisma.match.create({
+            data: {
+              startupId: startup.id,
+              vcName: investor.name || "Unknown",
+              contactInfo: JSON.stringify(investor.contactInfo || {}),
+              minimumInvestment: investor.investmentCriteria?.minInvestment || 0,
+              sectors: (investor.investmentCriteria?.sectors || []).join(", "),
+              website: investor.website || "N/A",
+              fitScore: investor.fitScore || 0,
+              matchReason: investor.matchReason || "N/A",
+              notablePortfolio: investor.notablePortfolio || "N/A",
+            },
+          })
+        )
+      );
+    }
 
     // Get complete startup data with matches
     const completeStartup = await prisma.startup.findUnique({
@@ -180,8 +161,6 @@ export async function POST(request: NextRequest) {
         matches: true,
       },
     });
-
-    console.log("14. Returning complete response");
 
     return NextResponse.json({ 
       message: "Startup created and analyzed successfully",
@@ -197,6 +176,5 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   } finally {
     await prisma.$disconnect();
-    console.log("15. Database connection closed");
   }
 }

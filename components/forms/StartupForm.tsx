@@ -72,36 +72,25 @@ export function StartupForm() {
 
       console.log("2. API Response Status:", response.status);
       
-      const responseText = await response.text();
-      console.log("3. Raw API Response:", responseText);
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error("4. JSON Parse Error:", parseError);
-        throw new Error(`Invalid JSON response from server: ${responseText}`);
-      }
-
-      console.log("5. Parsed API Response Data:", data);
+      const data = await response.json();
+      console.log("3. API Response Data:", data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || 'Failed to submit startup information');
       }
 
-      if (!data.startup || !data.startup.id) {
-        throw new Error('Invalid response format: missing startup data');
+      if (!data.startup?.id) {
+        throw new Error('Invalid response format: missing startup ID');
       }
 
-      const startupId = data.startup.id;
-
       toast({
-        title: "Success! 🎉",
-        description: "Your startup has been analyzed. Redirecting to results...",
+        title: "Startup Created! 🎉",
+        description: "Your startup has been registered. The AI analysis is processing and results will be available shortly.",
       });
 
       // Redirect to the startup details page
-      router.push(`/dashboard/startup/${startupId}`);
+      router.push(`/dashboard/startup/${data.startup.id}`);
+
     } catch (error) {
       console.error("Error in form submission:", error);
       toast({
