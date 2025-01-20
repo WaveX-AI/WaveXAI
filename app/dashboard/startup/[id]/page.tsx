@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { stringify } from 'csv-stringify/sync';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft} from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -33,7 +33,6 @@ import {
 import { Progress } from '@/components/ui/progress';
 import DashboardHeader from '@/components/DashboardHeader';
 import EmailComposer from '@/components/emailComposer/EmailComposer';
-import { useToast } from '@/hooks/use-toast';
 
 interface StartupDetails {
   id: string;
@@ -76,9 +75,7 @@ export default function StartupDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDialog, setShowDialog] = useState(false);
-  const [isCrawling, setIsCrawling] = useState(false);
-  const [crawlingProgress, setCrawlingProgress] = useState(0);
-  const { toast } = useToast();
+
 
   useEffect(() => {
     const fetchStartupData = async () => {
@@ -144,45 +141,7 @@ export default function StartupDetailsPage() {
     }
   };
 
-  const startEmailCrawling = async () => {
-    try {
-      setIsCrawling(true);
-      const response = await fetch('/api/crawlemails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          startupId: analysisData?.startup.id,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to crawl emails');
-      }
-
-      const data = await response.json();
-      setCrawlingProgress(100);
-
-      toast({
-        title: "Email Collection Complete",
-        description: `Successfully collected ${data.count} email addresses.`,
-        duration: 5000,
-      });
-    } catch (err) {
-      console.error('Error collecting emails:', err);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to collect emails. Please try again later.",
-        duration: 5000,
-      });
-    } finally {
-      setIsCrawling(false);
-      setTimeout(() => setCrawlingProgress(0), 1000);
-    }
-  };
+  
 
   if (loading) {
     return (
@@ -286,24 +245,7 @@ export default function StartupDetailsPage() {
               <Button onClick={downloadCSV}>
                 Download Investor List (CSV)
               </Button>
-              <Button 
-                onClick={startEmailCrawling} 
-                disabled={isCrawling}
-                className="gap-2"
-              >
-                <Mail className="h-4 w-4" />
-                {isCrawling ? (
-                  <>
-                    <span>Collecting Emails... {crawlingProgress}%</span>
-                    <div 
-                      className="absolute bottom-0 left-0 h-1 bg-primary-foreground transition-all duration-300"
-                      style={{ width: `${crawlingProgress}%` }}
-                    />
-                  </>
-                ) : (
-                  'Collect Investor Emails'
-                )}
-              </Button>
+             
               <EmailComposer 
                 startupId={startup.id} 
                 startupData={startup}

@@ -129,3 +129,14 @@ model RateLimitAttempt {
 
   @@index([key, timestamp])
 }
+
+model UserMapping {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  userId    String   
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clerkId])
+  @@index([userId])
+}
