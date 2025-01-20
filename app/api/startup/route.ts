@@ -25,6 +25,82 @@ interface Investor {
   notablePortfolio?: string;
 }
 
+
+//TODO:new post route handler AFTER UPDATING SCHEMA IN DATABASE.
+// export async function POST(request: NextRequest) {
+//   console.log("1. Starting POST request handler");
+  
+//   try {
+//     const body = await request.json();
+//     console.log("2. Received request body:", body);
+
+//     // Get the authenticated Clerk user
+//     const { userId: clerkUserId } = await auth();
+//     if (!clerkUserId) {
+//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//     }
+
+//     // Validate payload
+//     if (!body || typeof body !== 'object') {
+//       console.log("Invalid payload detected:", body);
+//       return NextResponse.json({ error: "Invalid payload - request body is missing or malformed" }, { status: 400 });
+//     }
+
+//     // Validate required fields
+//     const requiredFields = ['email', 'name', 'startupName'] as const;
+//     const missingFields = requiredFields.filter(field => !body[field]);
+    
+//     if (missingFields.length > 0) {
+//       console.log("3. Missing required fields:", missingFields);
+//       return NextResponse.json({ 
+//         error: "Missing required fields", 
+//         fields: missingFields 
+//       }, { status: 400 });
+//     }
+
+//     // Combine user and startup creation in a single transaction
+//     const { startup } = await prisma.$transaction(async (tx) => {
+//       // Create or update the user
+//       const user = await tx.user.upsert({
+//         where: { email: body.email },
+//         update: { name: body.name },
+//         create: {
+//           email: body.email,
+//           name: body.name,
+//         },
+//       });
+
+//       // Create or update the mapping between Clerk user and database user
+//       await tx.userMapping.upsert({
+//         where: { clerkId: clerkUserId },
+//         update: { userId: user.id },
+//         create: {
+//           clerkId: clerkUserId,
+//           userId: user.id,
+//         }
+//       });
+
+//       const capital = parseFloat(body.capitalRequired.replace(/[^0-9.]/g, ''));
+//       if (isNaN(capital)) {
+//         throw new Error("Invalid capital amount");
+//       }
+
+//       // Create the startup with the database userId
+//       const startup = await tx.startup.create({
+//         data: {
+//           name: body.startupName,
+//           industry: body.industry,
+//           sector: body.sector,
+//           stage: body.stage,
+//           description: body.description,
+//           capital,
+//           userId: user.id, // Using the database userId, not the Clerk userId
+//         },
+//       });
+
+//       return { startup };
+//     });
+
 export async function POST(request: NextRequest) {
   console.log("1. Starting POST request handler");
   
