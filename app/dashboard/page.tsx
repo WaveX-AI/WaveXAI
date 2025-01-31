@@ -131,7 +131,7 @@ function DashboardPage() {
                   </p>
                 </CardContent>
                 <CardFooter className="mt-auto pt-4">
-                  <Link href={`/startup/${startup.id}`} className="w-full">
+                  <Link href={`/dashboard/startup/${startup.id}`} className="w-full" target="_blank">
                     <Button className="w-full">
                       View Matches
                       <ArrowRight className="ml-2 h-4 w-4" />
