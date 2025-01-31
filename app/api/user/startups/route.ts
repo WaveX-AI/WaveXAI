@@ -12,7 +12,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Find the database userId through the mapping
+    // TODO:Find the database userId through the mapping
     const userMapping = await prisma.userMapping.findUnique({
       where: {
         clerkId: clerkUserId
