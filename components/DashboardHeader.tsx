@@ -1,6 +1,5 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 const DashboardHeader = () => {
   return (
@@ -12,19 +11,27 @@ const DashboardHeader = () => {
           </Link>
         </div>
         <div className="ml-auto flex items-center space-x-4">
+          <Link href="/insights">
+            <Button variant="outline">Insights</Button>
+          </Link>
+          <Link href="/analysis">
+            <Button variant="outline">Analysis</Button>
+          </Link>
           <Link href="https://www.lokicreatesai.me" target="_blank">
             <Button variant="outline">Help</Button>
           </Link>
-          <Link href='/Form'>
+          <Link href="/Form">
             <Button>Form</Button>
           </Link>
-          <Link href='https://www.aipoweredtools.tech' target="_blank">
-            <Button className="bg-blue-500 hover:bg-blue-600">Get Noticed</Button>
+          <Link href="https://www.aipoweredtools.tech" target="_blank">
+            <Button className="bg-blue-500 hover:bg-blue-600">
+              Get Noticed
+            </Button>
           </Link>
         </div>
       </div>
     </div>
-  )
+  );
 };
 
 export default DashboardHeader;
