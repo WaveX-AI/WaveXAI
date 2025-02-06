@@ -20,12 +20,30 @@ export function Header() {
           <div className="flex items-center space-x-4">
             {isSignedIn ? (
               <>
+              <Link href="/insights">
+                  <Button variant="outline">Insights</Button>
+                </Link>
+                <Link href="/startup-selection">
+                  <Button variant="outline">Analysis</Button>
+                </Link>
+                <Link href="https://www.lokicreatesai.me" target="_blank">
+                  <Button variant="outline">Help</Button>
+                </Link>
+                <Link href="/Form">
+                  <Button>Form</Button>
+                </Link>
+                <Link href="https://www.aipoweredtools.tech" target="_blank">
+                  <Button className="bg-blue-500 hover:bg-blue-600">
+                    Get Noticed
+                  </Button>
+                </Link>
                 <Link href="/dashboard" target="_blank">
                   <Button className="text-black hover:bg-gradient-to-r from-purple-600 to-blue-600 hover:text-white">
                     Get Started
                   </Button>
                 </Link>
                 <UserButton afterSignOutUrl="/" />
+                
               </>
             ) : (
               <SignInButton mode="modal">

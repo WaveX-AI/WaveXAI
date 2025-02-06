@@ -207,7 +207,7 @@ export default function StartupDetailsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle>Analysis Overview</CardTitle>
           </CardHeader>
@@ -231,7 +231,7 @@ export default function StartupDetailsPage() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         <Card>
           <CardHeader>

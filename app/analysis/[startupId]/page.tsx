@@ -1,26 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import DashboardHeader from "@/components/DashboardHeader";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
+import { 
+  Card, CardContent, CardHeader, CardTitle, CardDescription 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import {
-  Bar,
-  BarChart,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  LineChart,
-  Line,
+  Bar, BarChart, ResponsiveContainer, XAxis, YAxis, 
+  Tooltip, Legend, LineChart, Line
 } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -38,21 +28,18 @@ interface TrendData {
   marketFit: number;
 }
 
-export default function AnalysisPage() {
+export default function StartupAnalysisPage() {
   const [analysisData, setAnalysisData] = useState<AnalysisData[]>([]);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchAnalysis();
-  }, []);
+  const { startupId } = useParams();
 
   const fetchAnalysis = async () => {
     setLoading(true);
     try {
       const [analysisResponse, trendResponse] = await Promise.all([
-        fetch("/api/analysis"),
-        fetch("/api/analysis/trend"),
+        fetch(`/api/analysis/${startupId}`),
+        fetch(`/api/analysis/trend/${startupId}`)
       ]);
       const analysisData = await analysisResponse.json();
       const trendData = await trendResponse.json();
@@ -64,6 +51,11 @@ export default function AnalysisPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchAnalysis();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startupId]);
 
   const getChangeColor = (change: number) => {
     return change > 0

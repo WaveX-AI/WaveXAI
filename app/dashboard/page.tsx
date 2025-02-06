@@ -32,7 +32,7 @@ function DashboardPage() {
 
   useEffect(() => {
     if (authLoaded && !user) {
-      router.push('/sign-in');
+      router.push('/');
       return;
     }
 
