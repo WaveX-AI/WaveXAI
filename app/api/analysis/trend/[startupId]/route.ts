@@ -4,8 +4,7 @@ import OpenAI from "openai"
 
 const prisma = new PrismaClient()
 const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY,
-  // cache: true 
+  apiKey: process.env.OPENAI_API_KEY
 })
 
 export async function GET(
@@ -16,8 +15,7 @@ export async function GET(
 
   try {
     const startup = await prisma.startup.findUnique({
-      where: { id: startupId },
-      include: { matches: true }
+      where: { id: startupId }
     })
 
     if (!startup) {
@@ -29,71 +27,36 @@ export async function GET(
       messages: [
         { 
           role: "system", 
-          content: "Generate 6-month trend projection for startup metrics in JSON format with caching" 
+          content: "Generate monthly challenges for a startup in JSON FORMAT" 
         },
         { 
           role: "user", 
-          content: `Please provide a JSON trend projection for:
+          content: `Generate monthly challenges:
             Startup: ${startup.name}
             Industry: ${startup.industry}
             Sector: ${startup.sector}
-            Initial Capital: $${startup.capital}
-            Investor Matches: ${startup.matches.length}`
+            Stage: ${startup.stage}
+
+            Provide 6 unique, progressively complex monthly challenges`
         }
       ],
-      temperature: 0.7,
-      max_tokens: 1000,
-      // cache: true,
+      temperature: 0.6,
+      max_tokens: 1500,
       response_format: { type: "json_object" }
     })
 
-    console.log("Raw Completion:", completion);
-    console.log("Message Content:", completion.choices[0].message.content);
+    const challengesContent = JSON.parse(completion.choices[0].message.content || '{}')
 
-    const trendContent = JSON.parse(completion.choices[0].message.content || '{}')
+    const challengeMonths = ['January', 'February', 'March', 'April', 'May', 'June']
+    const challenges = challengeMonths.map((month) => ({
+      month,
+      challenge: challengesContent[month] || `Develop strategic milestone for ${month}`,
+      completed: false
+    }))
 
-    const trendData = [
-      { 
-        month: "Jan", 
-        funding: trendContent.janFunding || 50, 
-        growth: trendContent.janGrowth || 30, 
-        marketFit: trendContent.janMarketFit || 65 
-      },
-      { 
-        month: "Feb", 
-        funding: trendContent.febFunding || 55, 
-        growth: trendContent.febGrowth || 32, 
-        marketFit: trendContent.febMarketFit || 68 
-      },
-      { 
-        month: "Mar", 
-        funding: trendContent.marFunding || 60, 
-        growth: trendContent.marGrowth || 35, 
-        marketFit: trendContent.marMarketFit || 70 
-      },
-      { 
-        month: "Apr", 
-        funding: trendContent.aprFunding || 58, 
-        growth: trendContent.aprGrowth || 38, 
-        marketFit: trendContent.aprMarketFit || 73 
-      },
-      { 
-        month: "May", 
-        funding: trendContent.mayFunding || 62, 
-        growth: trendContent.mayGrowth || 40, 
-        marketFit: trendContent.mayMarketFit || 75 
-      },
-      { 
-        month: "Jun", 
-        funding: trendContent.junFunding || 65, 
-        growth: trendContent.junGrowth || 45, 
-        marketFit: trendContent.junMarketFit || 80 
-      }
-    ]
-
-    return NextResponse.json(trendData)
+    return NextResponse.json(challenges)
   } catch (error) {
-    console.error("Trend generation error:", error)
+    console.error("Challenges generation error:", error)
     return NextResponse.json([], { status: 500 })
   } finally {
     await prisma.$disconnect()

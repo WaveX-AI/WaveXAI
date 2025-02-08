@@ -18,7 +18,7 @@ interface Insight {
   id: string;
   title: string;
   description: string;
-  category: "market" | "funding" | "growth" | "risk";
+  category: string[];
   impact: "positive" | "negative" | "neutral";
   relevanceScore: number;
   trendDirection: "up" | "down" | "stable";
@@ -47,11 +47,15 @@ export default function InsightsPage() {
   };
 
   const filteredInsights = selectedCategory
-    ? insights.filter((insight) => insight.category === selectedCategory)
+    ? insights.filter((insight) => 
+        insight.category.some(cat => 
+          cat.toLowerCase() === selectedCategory.toLowerCase()
+        )
+      )
     : insights;
 
   const getCategoryColor = (category: string) => {
-    switch (category) {
+    switch (category.toLowerCase()) {
       case "market":
         return "bg-blue-100 text-blue-800";
       case "funding":
@@ -90,7 +94,7 @@ export default function InsightsPage() {
           >
             All
           </Button>
-          {["market", "funding", "growth", "risk"].map((category) => (
+          {["startup"].map((category) => (
             <Button
               key={category}
               variant={selectedCategory === category ? "default" : "outline"}
@@ -105,15 +109,19 @@ export default function InsightsPage() {
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
-        ) : (
+        ) : filteredInsights.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredInsights.map((insight) => (
               <Card key={insight.id} className="flex flex-col">
                 <CardHeader>
                   <div className="flex justify-between items-start">
-                    <Badge className={`${getCategoryColor(insight.category)}`}>
-                      {insight.category}
-                    </Badge>
+                    <div className="flex gap-2">
+                      {insight.category.map((cat) => (
+                        <Badge key={cat} className={`${getCategoryColor(cat)}`}>
+                          {cat}
+                        </Badge>
+                      ))}
+                    </div>
                     {getImpactIcon(insight.impact)}
                   </div>
                   <CardTitle className="mt-2">{insight.title}</CardTitle>
@@ -149,6 +157,10 @@ export default function InsightsPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        ) : (
+          <div className="text-center text-gray-500 py-10">
+            No insights found for this category.
           </div>
         )}
         <Button onClick={fetchInsights} className="mt-6">

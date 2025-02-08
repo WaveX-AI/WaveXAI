@@ -16,11 +16,14 @@ export async function GET(
   try {
     const startup = await prisma.startup.findUnique({
       where: { id: startupId },
-      include: { matches: true, user: true }
+      include: { 
+        matches: true, 
+        user: true
+      }
     })
 
     if (!startup) {
-      return NextResponse.json([], { status: 404 })
+      return NextResponse.json(null, { status: 404 })
     }
 
     const completion = await openai.chat.completions.create({
@@ -28,63 +31,50 @@ export async function GET(
       messages: [
         { 
           role: "system", 
-          content: "Generate comprehensive startup performance metrics in JSON format" 
+          content: "Provide a comprehensive startup analysis as an Investor in JSON FORMAT" 
         },
         { 
           role: "user", 
-          content: `Please analyze startup and provide metrics in JSON format: 
-            Name: ${startup.name}
+          content: `Perform a detailed startup analysis:
+            Startup: ${startup.name}
             Industry: ${startup.industry}
             Sector: ${startup.sector}
             Stage: ${startup.stage}
-            Capital: $${startup.capital}
-            Investor Matches: ${startup.matches.length}`
+            Initial Capital: $${startup.capital}
+            Investor Matches: ${startup.matches.length}
+
+            Provide:
+            - Key strengths (3-4 points)
+            - Strategic recommendations (3-4 points)
+            - Comprehensive market analysis paragraph based on the startup Idea and its Value Proposition`
         }
       ],
-      temperature: 0.7,
-      max_tokens: 1000,
+      temperature: 0.6,
+      max_tokens: 2000,
       response_format: { type: "json_object" }
     })
 
     const analysisContent = JSON.parse(completion.choices[0].message.content || '{}')
 
-    const analysisData = [
-      { 
-        category: "Funding", 
-        value: Math.round((analysisContent.startup.capital || 250000) / 5000) || "N/A", 
-        previousValue: 50, 
-        change: 30 
-      },
-      { 
-        category: "Growth", 
-        value: analysisContent.startup.performance_metrics?.traction?.value || 45, 
-        previousValue: 40, 
-        change: 12.5 
-      },
-      { 
-        category: "Market Fit", 
-        value: ['Prototype', 'Minimum Viable Product', 'Market Ready'].indexOf(analysisContent.startup.stage) * 25 + 50, 
-        previousValue: 75, 
-        change: 6.67 
-      },
-      { 
-        category: "Team", 
-        value: analysisContent.startup.performance_metrics?.traction?.value || 70, 
-        previousValue: 65, 
-        change: 7.69 
-      },
-      { 
-        category: "Innovation", 
-        value: Math.round(Math.random() * 50) + 50, 
-        previousValue: 60, 
-        change: -8.33 
-      }
-    ]
+    const analysis = {
+      strengths: analysisContent.strengths || [
+        "Innovative approach to market challenges",
+        "Strong initial capital base",
+        "Promising investor interest"
+      ],
+      recommendations: analysisContent.recommendations || [
+        "Focus on targeted market segmentation",
+        "Develop robust go-to-market strategy",
+        "Enhance product-market fit"
+      ],
+      marketAnalysis: analysisContent.marketAnalysis || 
+        "The startup shows potential in a competitive landscape, with unique value propositions that distinguish it from existing solutions."
+    }
 
-    return NextResponse.json(analysisData)
+    return NextResponse.json(analysis)
   } catch (error) {
     console.error("Analysis generation error:", error)
-    return NextResponse.json([], { status: 500 })
+    return NextResponse.json(null, { status: 500 })
   } finally {
     await prisma.$disconnect()
   }

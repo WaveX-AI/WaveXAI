@@ -7,44 +7,40 @@ import {
   Card, CardContent, CardHeader, CardTitle, CardDescription 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import {
-  Bar, BarChart, ResponsiveContainer, XAxis, YAxis, 
-  Tooltip, Legend, LineChart, Line
-} from "recharts";
+import { Loader2, Download, CheckSquare, Square } from "lucide-react";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from "docx";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface AnalysisData {
-  category: string;
-  value: number;
-  previousValue: number;
-  change: number;
+interface StartupAnalysis {
+  strengths: string[];
+  recommendations: string[];
+  marketAnalysis: string;
 }
 
-interface TrendData {
+interface MonthlyChallenge {
   month: string;
-  funding: number;
-  growth: number;
-  marketFit: number;
+  challenge: string;
+  completed: boolean;
 }
 
 export default function StartupAnalysisPage() {
-  const [analysisData, setAnalysisData] = useState<AnalysisData[]>([]);
-  const [trendData, setTrendData] = useState<TrendData[]>([]);
+  const [analysis, setAnalysis] = useState<StartupAnalysis | null>(null);
+  const [challenges, setChallenges] = useState<MonthlyChallenge[]>([]);
   const [loading, setLoading] = useState(true);
   const { startupId } = useParams();
 
   const fetchAnalysis = async () => {
     setLoading(true);
     try {
-      const [analysisResponse, trendResponse] = await Promise.all([
+      const [analysisResponse, challengesResponse] = await Promise.all([
         fetch(`/api/analysis/${startupId}`),
         fetch(`/api/analysis/trend/${startupId}`)
       ]);
       const analysisData = await analysisResponse.json();
-      const trendData = await trendResponse.json();
-      setAnalysisData(analysisData);
-      setTrendData(trendData);
+      const challengesData = await challengesResponse.json();
+      setAnalysis(analysisData);
+      setChallenges(challengesData.map((c: MonthlyChallenge) => ({...c, completed: false})));
     } catch (error) {
       console.error("Error fetching analysis:", error);
     } finally {
@@ -52,18 +48,76 @@ export default function StartupAnalysisPage() {
     }
   };
 
+  const toggleChallengeCompletion = (index: number) => {
+    const updatedChallenges = [...challenges];
+    updatedChallenges[index].completed = !updatedChallenges[index].completed;
+    setChallenges(updatedChallenges);
+  };
+
+  const downloadReport = () => {
+    if (!analysis) return;
+
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({
+            text: "Startup Analysis Report",
+            heading: HeadingLevel.TITLE
+          }),
+          
+          new Paragraph({
+            text: "Strengths",
+            heading: HeadingLevel.HEADING_1
+          }),
+          ...analysis.strengths.map(strength => 
+            new Paragraph({
+              children: [
+                new TextRun(`• ${strength}`),
+              ],
+              bullet: {
+                level: 0
+              }
+            })
+          ),
+
+          new Paragraph({
+            text: "Key Recommendations",
+            heading: HeadingLevel.HEADING_1
+          }),
+          ...analysis.recommendations.map(recommendation => 
+            new Paragraph({
+              children: [
+                new TextRun(`• ${recommendation}`),
+              ],
+              bullet: {
+                level: 0
+              }
+            })
+          ),
+
+          new Paragraph({
+            text: "Market Analysis",
+            heading: HeadingLevel.HEADING_1
+          }),
+          new Paragraph(analysis.marketAnalysis)
+        ]
+      }]
+    });
+
+    Packer.toBlob(doc).then(blob => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'startup_analysis_report.docx';
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+  };
+  
   useEffect(() => {
     fetchAnalysis();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startupId]);
-
-  const getChangeColor = (change: number) => {
-    return change > 0
-      ? "text-green-500"
-      : change < 0
-      ? "text-red-500"
-      : "text-yellow-500";
-  };
 
   return (
     <>
@@ -78,86 +132,84 @@ export default function StartupAnalysisPage() {
           <Tabs defaultValue="overview" className="space-y-4">
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="trends">Trends</TabsTrigger>
+              <TabsTrigger value="challenges">Challenges</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {analysisData.map((item) => (
-                  <Card key={item.category}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        {item.category}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{item.value}</div>
-                      <p className={`text-xs ${getChangeColor(item.change)}`}>
-                        {item.change > 0 ? "+" : ""}
-                        {item.change}% from last period
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Performance Overview</CardTitle>
-                  <CardDescription>
-                    Comparison of key startup metrics
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-2">
-                  <ResponsiveContainer width="100%" height={350}>
-                    <BarChart data={analysisData}>
-                      <XAxis dataKey="category" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="value" fill="#8884d8" name="Current" />
-                      <Bar
-                        dataKey="previousValue"
-                        fill="#82ca9d"
-                        name="Previous"
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+              {analysis && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Startup Insights</CardTitle>
+                    <Button 
+                      onClick={downloadReport} 
+                      className="absolute top-4 right-4"
+                      variant="outline"
+                    >
+                      <Download className="mr-2 h-4 w-4" /> Download Report
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <section className="mb-4">
+                      <h2 className="text-xl font-semibold mb-2">Strengths</h2>
+                      <ul className="list-disc pl-5">
+                        {analysis.strengths.map((strength, index) => (
+                          <li key={index}>{strength}</li>
+                        ))}
+                      </ul>
+                    </section>
+                    <section className="mb-4">
+                      <h2 className="text-xl font-semibold mb-2">Key Recommendations</h2>
+                      <ul className="list-disc pl-5">
+                        {analysis.recommendations.map((recommendation, index) => (
+                          <li key={index}>{recommendation}</li>
+                        ))}
+                      </ul>
+                    </section>
+                    <section>
+                      <h2 className="text-xl font-semibold mb-2">Market Analysis</h2>
+                      <p>{analysis.marketAnalysis}</p>
+                    </section>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
-            <TabsContent value="trends" className="space-y-4">
+            <TabsContent value="challenges" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Performance Trends</CardTitle>
+                  <CardTitle>Monthly Challenges</CardTitle>
                   <CardDescription>
-                    Monthly trends of key startup metrics
+                    Track and manage your startup&apos;s key challenges
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="pt-2">
-                  <ResponsiveContainer width="100%" height={350}>
-                    <LineChart data={trendData}>
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="funding"
-                        stroke="#8884d8"
-                      />
-                      <Line type="monotone" dataKey="growth" stroke="#82ca9d" />
-                      <Line
-                        type="monotone"
-                        dataKey="marketFit"
-                        stroke="#ffc658"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+                <CardContent>
+                  <div className="space-y-2">
+                    {challenges.map((challenge, index) => (
+                      <div 
+                        key={challenge.month} 
+                        className="flex justify-between items-center border-b py-2 last:border-b-0"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <button 
+                            onClick={() => toggleChallengeCompletion(index)}
+                          >
+                            {challenge.completed ? (
+                              <CheckSquare className="text-green-500" />
+                            ) : (
+                              <Square className="text-gray-400" />
+                            )}
+                          </button>
+                          <span className={`font-medium ${challenge.completed ? 'line-through text-gray-500' : ''}`}>
+                            {challenge.month}: {challenge.challenge}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
         )}
-        <Button onClick={fetchAnalysis} className="mt-6">
+        <Button onClick={fetchAnalysis} className="mt-6 w-full">
           Refresh Analysis
         </Button>
       </div>
