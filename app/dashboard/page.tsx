@@ -80,7 +80,7 @@ function DashboardPage() {
   return (
     <>
       <DashboardHeader />
-      <div className="container mx-auto p-8 space-y-8">
+      <div className="container mx-auto p-8 space-y-8 mt-16">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold">Your Startups</h1>

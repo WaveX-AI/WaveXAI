@@ -180,7 +180,7 @@ export default function StartupDetailsPage() {
   return (
     <>
       <DashboardHeader />
-      <div className="container mx-auto p-8 space-y-8">
+      <div className="container mx-auto p-8 space-y-8 mt-16">
         <Link href="/dashboard">
           <Button variant="outline">
             <ArrowLeft className="mr-2 h-4 w-4" />
