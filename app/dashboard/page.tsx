@@ -143,6 +143,7 @@ function DashboardPage() {
           </div>
         )}
       </div>
+      {/* TODO:new components and footer responsiveness */}
     </>
   );
 }
