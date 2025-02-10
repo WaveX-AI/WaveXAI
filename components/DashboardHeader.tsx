@@ -37,7 +37,7 @@ const DashboardHeader = () => {
                 <Button 
                   variant="ghost"
                   className={`group relative px-4 py-2 text-gray-300 hover:text-white transition-colors duration-300
-                    ${item.label === 'Get Noticed' ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : ''}`}
+                    ${item.label === 'Get Noticed' ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white' : ''}`}
                 >
                   <span className="flex items-center gap-2">
                     <item.icon className="w-4 h-4" />

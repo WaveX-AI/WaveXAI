@@ -85,7 +85,7 @@ export default function InsightsPage() {
   return (
     <>
       <DashboardHeader />
-      <div className="container mx-auto p-8">
+      <div className="container mx-auto p-8 mt-10 xl:mt-16 md:mt-12 sm:mt-16">
         <h1 className="text-3xl font-bold mb-6">Startup Insights</h1>
         <div className="mb-6 flex flex-wrap gap-2">
           <Button

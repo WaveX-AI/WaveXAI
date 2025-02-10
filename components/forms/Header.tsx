@@ -4,32 +4,33 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export function Header() {
-    
-
-    // const isUserLoggedIn = true;
-  
+      
   return (
-    <header className="border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex-shrink-0">
-            <Link href="/">
-              <h1 className="text-2xl font-bold text-purple-600">StartupMatch</h1>
-            </Link>
-           
-          </div>
-    
-            {/* LOG IN AND USER SESSION */}
-                <div className="flex items-center space-x-4">
-                        
-                        <Link href="/">
-                            <Button className="text-black hover:bg-gradient-to-r from-purple-600 to-blue-600 hover:text-white">Back to Home</Button>
-                        </Link>
-
-                    {/* <Button variant="outline" className="text-purple-600 hover:bg-gradient-to-r from-purple-600 to-blue-600 hover:text-white">Sign In</Button> */}
-                </div>
+    <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex h-14 sm:h-16 items-center justify-between">
+        <div className="flex-shrink-0">
+          <Link href="/" className="inline-block">
+            <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+              StartupMatch
+            </h1>
+          </Link>
+        </div>
+  
+        <div className="flex items-center">
+          <Link href="/">
+            <Button 
+              variant="ghost" 
+              className="text-sm sm:text-base px-3 sm:px-4 py-2 text-slate-200 
+                       hover:bg-gradient-to-r from-purple-300 to-purple-700 
+                       hover:text-white transition-colors"
+            >
+              Back to Home
+            </Button>
+          </Link>
         </div>
       </div>
-    </header>
-  );
+    </div>
+  </header>
+);
 }
