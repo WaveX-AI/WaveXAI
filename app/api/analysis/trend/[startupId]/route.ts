@@ -27,7 +27,14 @@ export async function GET(
       messages: [
         { 
           role: "system", 
-          content: "Generate monthly challenges for a startup in JSON FORMAT" 
+          content: `Generate 6 monthly challenges for a startup in strict JSON array of strings:
+           {
+              "challenges": [
+                "January Challenge Description",
+                "February Challenge Description",
+                ...
+              ]
+            }` 
         },
         { 
           role: "user", 
@@ -45,12 +52,24 @@ export async function GET(
       response_format: { type: "json_object" }
     })
 
-    const challengesContent = JSON.parse(completion.choices[0].message.content || '{}')
+    // More robust parsing
+    const rawContent = completion.choices[0].message.content
+    let challengesContent;
+
+    try {
+      challengesContent = JSON.parse(rawContent || '{}')
+      if (!challengesContent.challenges || challengesContent.challenges.length === 0) {
+        throw new Error('No challenges generated')
+      }
+    } catch (parseError) {
+      console.error("Challenge Generation Error:", parseError)
+      return NextResponse.json([], { status: 500 })
+    }
 
     const challengeMonths = ['January', 'February', 'March', 'April', 'May', 'June']
-    const challenges = challengeMonths.map((month) => ({
-      month,
-      challenge: challengesContent[month] || `Develop strategic milestone for ${month}`,
+    const challenges = challengesContent.challenges.slice(0, 6).map((challenge: string, index: number) => ({
+      month: challengeMonths[index],
+      challenge,
       completed: false
     }))
 

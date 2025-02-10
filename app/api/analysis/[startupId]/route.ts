@@ -31,44 +31,63 @@ export async function GET(
       messages: [
         { 
           role: "system", 
-          content: "Provide a comprehensive startup analysis as an Investor in JSON FORMAT" 
+          content: `Generate a comprehensive startup analysis in strict JSON format with these keys:
+            {
+              "strengths": ["strength1", "strength2", "strength3"],
+              "recommendations": ["recommendation1", "recommendation2", "recommendation3"],
+              "marketAnalysis": "Detailed market analysis paragraph"
+            }` 
         },
         { 
           role: "user", 
-          content: `Perform a detailed startup analysis:
-            Startup: ${startup.name}
-            Industry: ${startup.industry}
-            Sector: ${startup.sector}
-            Stage: ${startup.stage}
-            Initial Capital: $${startup.capital}
-            Investor Matches: ${startup.matches.length}
+          content: `Detailed startup analysis for:
+            - Name: ${startup.name}
+            - Industry: ${startup.industry}
+            - Sector: ${startup.sector}
+            - Stage: ${startup.stage}
+            - Initial Capital: $${startup.capital}
+            - Investor Matches: ${startup.matches.length}
 
             Provide:
-            - Key strengths (3-4 points)
-            - Strategic recommendations (3-4 points)
-            - Comprehensive market analysis paragraph based on the startup Idea and its Value Proposition`
+            1. 3-4 key strengths highlighting unique competitive advantages
+            2. 3-4 strategic recommendations for growth
+            3. Comprehensive market analysis assessing potential and challenges`
         }
       ],
-      temperature: 0.6,
+      temperature: 0.7,
       max_tokens: 2000,
       response_format: { type: "json_object" }
     })
 
-    const analysisContent = JSON.parse(completion.choices[0].message.content || '{}')
+    // Robust parsing with fallback
+    const rawContent = completion.choices[0].message.content
+    let analysisContent;
+
+    try {
+      analysisContent = JSON.parse(rawContent || '{}')
+    } catch (parseError) {
+      console.error("JSON Parsing Error:", parseError)
+      analysisContent = {}
+    }
 
     const analysis = {
-      strengths: analysisContent.strengths || [
-        "Innovative approach to market challenges",
-        "Strong initial capital base",
-        "Promising investor interest"
-      ],
-      recommendations: analysisContent.recommendations || [
-        "Focus on targeted market segmentation",
-        "Develop robust go-to-market strategy",
-        "Enhance product-market fit"
-      ],
+      strengths: analysisContent.strengths?.length > 0 
+        ? analysisContent.strengths 
+        : [
+            "Innovative approach to market challenges",
+            "Strong initial capital base",
+            "Promising investor interest"
+          ],
+      recommendations: analysisContent.recommendations?.length > 0
+        ? analysisContent.recommendations
+        : [
+            "Focus on targeted market segmentation",
+            "Develop robust go-to-market strategy", 
+            "Enhance product-market fit"
+          ],
       marketAnalysis: analysisContent.marketAnalysis || 
-        "The startup shows potential in a competitive landscape, with unique value propositions that distinguish it from existing solutions."
+        `The startup demonstrates significant potential in a competitive landscape, 
+        with unique value propositions that distinguish it from existing solutions.`
     }
 
     return NextResponse.json(analysis)

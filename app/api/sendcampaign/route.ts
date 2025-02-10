@@ -53,24 +53,34 @@ export async function POST(request: Request) {
     const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}campaign/verify-success?id=${campaign.id}&token=${verificationToken}`;
     
     try {
-      await resend.emails.send({
+      const emailResponse = await resend.emails.send({
         from: `Startup Connect <${process.env.RESEND_FROM_EMAIL}>`,
         to: senderEmail,
-        subject: "Verify your email campaign",
+        subject: "Verify Your Email Campaign",
         html: `
           <h2>Verify Your Email Campaign</h2>
           <p>Click the link below to verify and send your campaign:</p>
-          <a href="${verificationUrl}">${verificationUrl}</a>
+          <a href="${verificationUrl}">Verify Campaign</a>
           <p>This link will expire in 30 minutes.</p>
-        `
+        `,
+        text: `Verify your email campaign. Link: ${verificationUrl}`
       });
-
+    
+      logger.info("Verification email sent", { 
+        email: senderEmail, 
+        emailResponse 
+      });
+    
       return NextResponse.json({ 
         success: true,
-        redirectUrl: verificationUrl
+        redirectUrl: verificationUrl,
+        emailResponse
       });
     } catch (error) {
-      logger.error("Verification email sending failed", { error });
+      logger.error("Verification email sending failed", { 
+        error, 
+        email: senderEmail 
+      });
       return NextResponse.json(
         { error: "Failed to send verification email" },
         { status: 500 }

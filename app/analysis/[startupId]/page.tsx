@@ -198,7 +198,7 @@ export default function StartupAnalysisPage() {
                             )}
                           </button>
                           <span className={`font-medium ${challenge.completed ? 'line-through text-gray-500' : ''}`}>
-                            {challenge.month}: {challenge.challenge}
+                           {challenge.challenge}
                           </span>
                         </div>
                       </div>
