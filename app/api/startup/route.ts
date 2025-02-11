@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
               5. Strategic value add potential
       
               Always return at least 10 real, active investors that match the criteria.
-              Include maximum of 2 Government based Programs in thoes 10 matches one from India one from US that is most relevant.
+              Include maximum of 2 Government based Programs one from India one from US that is most relevant.
               So in the end in 10 matches 8 will be VC's and 2 will be Government based Programs.
               Each investor must include complete contact details and investment criteria.` 
           },
@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
         response_format: { type: "json_object" },
       }),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("OpenAI request timeout")), 60000)
+        setTimeout(() => reject(new Error("OpenAI request timeout")), 70000)
       )
     ]) as { choices: { message: { content: string } }[] };
 
