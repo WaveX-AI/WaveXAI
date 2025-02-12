@@ -1,11 +1,11 @@
+// FILE: app/layout.tsx
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import Footer from "@/components/shared/Footer";
 import { Toaster } from "@/components/ui/toaster";
-import {
-  ClerkProvider
-} from '@clerk/nextjs'
+import { ClerkProvider } from '@clerk/nextjs';
+import Providers from "./providers";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -29,18 +29,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-  
     <ClerkProvider>
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        suppressHydrationWarning
-      >
-        {children}
-        <Footer/>
-        <Toaster />
-      </body>
-    </html>
+      <html lang="en" className="dark" suppressHydrationWarning>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          suppressHydrationWarning
+        >
+          <Providers>
+            {children}
+          </Providers>
+          <Footer />
+          <Toaster />
+        </body>
+      </html>
     </ClerkProvider>
   );
 }

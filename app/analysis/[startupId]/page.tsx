@@ -71,6 +71,7 @@ export default function StartupAnalysisPage() {
     }
   };
 
+
   const toggleChallengeCompletion = (index: number) => {
     const updatedChallenges = [...challenges];
     updatedChallenges[index].completed = !updatedChallenges[index].completed;
@@ -143,9 +144,12 @@ export default function StartupAnalysisPage() {
     toast.success("Report downloaded successfully");
   };
 
-  useEffect(() => {
-    fetchAnalysis();
-  }, [startupId, fetchAnalysis]); // Added fetchAnalysis to dependencies
+useEffect(() => {
+  fetchAnalysis();
+// No dependencies needed since we want it to run only once
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
 
   return (
     <>
@@ -248,10 +252,10 @@ export default function StartupAnalysisPage() {
                         </ul>
                       </section>
                       <section>
-                        <h2 className="text-xl font-semibold mb-3 text-gray-800">
+                        <h2 className="text-xl font-semibold mb-3 text-green-500">
                           Market Analysis
                         </h2>
-                        <p className="text-gray-600 leading-relaxed">
+                        <p className="text-white leading-relaxed">
                           {analysis.marketAnalysis}
                         </p>
                       </section>
@@ -280,7 +284,7 @@ export default function StartupAnalysisPage() {
                       {challenges.map((challenge, index) => (
                         <motion.div
                           key={challenge.month}
-                          className="flex items-center justify-between p-4 bg-white rounded-lg shadow"
+                          className="flex items-center justify-between p-4 bg-zinc-600 rounded-lg shadow"
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3, delay: index * 0.1 }}
@@ -300,13 +304,13 @@ export default function StartupAnalysisPage() {
                               <span
                                 className={`font-medium text-lg ${
                                   challenge.completed
-                                    ? "line-through text-gray-500"
-                                    : "text-gray-800"
+                                    ? "line-through text-white-500"
+                                    : "text-white"
                                 }`}
                               >
                                 {challenge.challenge}
                               </span>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-sm text-green-600">
                                 {challenge.month}
                               </p>
                             </div>
@@ -326,12 +330,13 @@ export default function StartupAnalysisPage() {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <Button
-            onClick={fetchAnalysis}
-            className="mt-8 w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90"
-          >
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Refresh Analysis
-          </Button>
+              onClick={fetchAnalysis}
+              className="mt-8 w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90"
+            >
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {!loading && <Loader2 className="mr-2 h-4 w-4 hidden" />}
+              Refresh Analysis
+        </Button>
         </motion.div>
       </main>
     </>
