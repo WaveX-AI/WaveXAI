@@ -120,55 +120,46 @@ export default function EmailComposer({ startupId, startupData }: EmailComposerP
   };
 
   // Update the onContentSubmit function in EmailComposer.tsx
-const onContentSubmit = async (values: EmailContentValues) => {
-  setLoading(true);
-  setEmailStatus('sending');
-  try {
-    const response = await fetch('/api/sendcampaign', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        startupId,
-        senderEmail: emailForm.getValues('senderEmail'),
-        content: values.content,
-        subject: `Investment Opportunity: ${startupData.name}`,
-      }),
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to initiate email campaign');
-    }
-
-    console.log("Campaign creation response:", data); // Debug log
-
-    if (data.success) {
-      setEmailStatus('verificationSent');
-      if (data.redirectUrl) {
-        // Optional: Open in new tab
-        window.open(data.redirectUrl, '_blank');
-      }
-      toast({
-        title: 'Verification Email Sent',
-        description: 'Please check your email to verify and send the campaign. You can also use the verification link in your browser.',
+  const onContentSubmit = async (values: EmailContentValues) => {
+    setLoading(true);
+    setEmailStatus('sending');
+    try {
+      const response = await fetch('/api/sendcampaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startupId,
+          senderEmail: emailForm.getValues('senderEmail'),
+          content: values.content,
+          subject: `Investment Opportunity: ${startupData.name}`,
+        }),
       });
-    } else {
-      throw new Error(data.error || 'Unknown error occurred');
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('Server error:', data);
+        throw new Error(data.details || data.error || 'Failed to send email');
+      }
+  
+      setEmailStatus('sent');
+      toast({
+        title: 'Success',
+        description: 'Investor details and email script have been sent to your email.',
+      });
+      
+    } catch (error) {
+      console.error("Error sending email:", error);
+      setEmailStatus('error');
+      toast({
+        title: 'Error Sending Email',
+        description: error instanceof Error ? error.message : 'Failed to send email. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
-    
-  } catch (error) {
-    console.error("Campaign error:", error);
-    setEmailStatus('error');
-    toast({
-      title: 'Error',
-      description: error instanceof Error ? error.message : 'Failed to send email campaign',
-      variant: 'destructive',
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const getStatusMessage = () => {
     switch (emailStatus) {
