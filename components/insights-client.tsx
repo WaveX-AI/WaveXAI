@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { mockInsights } from "@/types/insights";
 
 interface Insight {
   id: string;
@@ -37,12 +38,18 @@ interface Insight {
 }
 
 const fetchInsights = async (): Promise<Insight[]> => {
-  const response = await fetch("/api/insights");
-  if (!response.ok) {
-    throw new Error("Failed to fetch insights");
+  try {
+    const response = await fetch("/api/insights");
+    if (!response.ok) {
+      throw new Error("Failed to fetch insights");
+    }
+    return response.json();
+  } catch (error) {
+    console.warn("Failed to fetch insights, using mock data:", error);
+    return mockInsights;
   }
-  return response.json();
 };
+
 
 export default function InsightsClient() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);

@@ -34,7 +34,7 @@ const EmailPopup = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/save-email', {
+      const response = await fetch('/api/saveemail', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

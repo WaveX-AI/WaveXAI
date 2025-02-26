@@ -1,6 +1,4 @@
 "use client"
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,34 +15,42 @@ const NewsletterSection = () => {
     if (!email) return;
 
     setIsSubmitting(true);
+    setStatus({ type: '', message: '' });
+    
     try {
-      const response = await fetch('/api/save-email', {
+      console.log('Submitting email:', email);
+      
+      const response = await fetch('/api/saveemail', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email }),
       });
-
+      
       const data = await response.json();
 
       if (response.ok) {
         setStatus({ 
           type: 'success', 
-          message: 'Thank you for joining our community!' 
+          message: data.message || 'Thank you for joining our community!' 
         });
         setEmail('');
       } else {
         throw new Error(data.error || 'Failed to subscribe');
       }
     } catch (error) {
+      console.error('Error details:', error);
       setStatus({ 
         type: 'error', 
         message: error instanceof Error ? error.message : 'Something went wrong. Please try again.' 
       });
     } finally {
       setIsSubmitting(false);
-      setTimeout(() => setStatus({ type: '', message: '' }), 3000);
+      // Clear status message after 5 seconds
+      if (status.type === 'success') {
+        setTimeout(() => setStatus({ type: '', message: '' }), 5000);
+      }
     }
   };
 
